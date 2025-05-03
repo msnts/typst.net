@@ -5,26 +5,15 @@ using Typst.Net.Core.Exceptions; // Namespace for TypstOptions
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Dependency Injection Setup ---
-
-// 1. Configure TypstOptions from appsettings.json
-builder.Services.Configure<TypstOptions>(
-    builder.Configuration.GetSection(TypstOptions.SectionName));
-
-// 2. Add Logging
 builder.Services.AddLogging();
 
-// 3. Register the TypstCompiler service (Scoped is often suitable for request-based services)
-builder.Services.AddScoped<ITypstCompiler, TypstCompiler>();
+builder.Services.AddTypst();
 
-// Optional: Add validation for TypstOptions on startup
 builder.Services.AddOptions<TypstOptions>()
     .Bind(builder.Configuration.GetSection(TypstOptions.SectionName))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.ExecutablePath), $"Configuration value '{TypstOptions.SectionName}.ExecutablePath' must be provided.")
-    // Add File.Exists check here ONLY if you are certain the path is fixed at startup
-    // .Validate(options => File.Exists(options.ExecutablePath), $"Typst executable not found at configured path.")
-    ;
-
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+    
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

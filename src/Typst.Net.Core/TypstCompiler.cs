@@ -17,7 +17,6 @@ public class TypstCompiler : ITypstCompiler
     {
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        ValidateOptions();
     }
 
     public async Task<TypstResult> CompileAsync(Stream inputStream, TypstCompileOptions compileOptions, CancellationToken cancellationToken = default)
@@ -37,10 +36,18 @@ public class TypstCompiler : ITypstCompiler
 
             // Concurrently write to stdin and wait for process exit
             Task writingTask = WriteToStdinAsync(process, inputStream, cancellationToken);
-            Task processExitTask = WaitForExitAsync(process, cancellationToken);
 
-            await Task.WhenAll(writingTask, processExitTask);
-            _logger.LogDebug("Stdin writing complete and Typst process exited (PID: {PID}).", process.Id);
+            _logger.LogDebug("Asynchronously waiting for Typst process (PID: {PID}) to exit...", process.Id);
+
+            await process.WaitForExitAsync(cancellationToken);
+
+            _logger.LogDebug("Typst process exited (PID: {PID}). Proceeding with exit code check.", process.Id);
+
+            // Ensure the stdin writing task also completed (it might finish after exit in some cases)
+            // Although typically WaitForExitAsync won't return until IO pipes are flushed,
+            // awaiting the writing task ensures any potential exceptions from it are observed.
+            await writingTask;
+            _logger.LogDebug("Stdin writing task confirmed complete (PID: {PID}).", process.Id);
 
             // Process has exited, check results and read stdout
             int exitCode = process.ExitCode;
@@ -59,37 +66,22 @@ public class TypstCompiler : ITypstCompiler
                 throw CreateCompilationException(exitCode, stdErr, process.Id);
             }
         }
-        catch (Exception ex) when (ex is not TypstException) // Handle only unexpected errors here
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Typst compilation was canceled (PID: {PID}).", process?.Id ?? -1);
+            CleanupProcess(process, "cancellation");
+            throw;
+        }
+        catch (Exception ex) when (ex is not TypstException)
         {
             _logger.LogError(ex, "Unexpected error during Typst compilation.");
-            // Ensure process is cleaned up if it's still running after an unexpected error
             CleanupProcess(process, "unexpected error");
             throw new TypstProcessException($"Unexpected error during Typst execution: {ex.Message}", ex);
         }
         finally
         {
-            // Ensure the process is always disposed EXCEPT if successfully completed
-            // (it's disposed after reading stdout in the success path)
-            // This covers error paths and premature exits.
-            if (process != null && process.ExitCode != 0) // Dispose if exited with error
-            {
-                process.Dispose();
-                _logger.LogDebug("Typst process (PID: {PID}) resources released after error.", process.Id);
-            }
-        }
-    }
-
-    private void ValidateOptions()
-    {
-        if (string.IsNullOrWhiteSpace(_options.ExecutablePath))
-        {
-            throw new TypstConfigurationException(
-                $"Typst executable path is not configured ('{TypstOptions.SectionName}.ExecutablePath').");
-        }
-        // Log only if file doesn't exist, don't throw. Allows path to become valid later.
-        if (!File.Exists(_options.ExecutablePath))
-        {
-            _logger.LogWarning("Typst executable not found at configured path: {Path}", _options.ExecutablePath);
+            process?.Dispose();
+            _logger.LogDebug("Typst process (PID: {PID}) resources released after error.", process?.Id ?? -1);
         }
     }
 
@@ -141,42 +133,6 @@ public class TypstCompiler : ITypstCompiler
         return process;
     }
 
-    private static Task WaitForExitAsync(Process process, CancellationToken cancellationToken)
-    {
-        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        process.Exited += (sender, args) => tcs.TrySetResult(true);
-
-        // Use CancellationTokenRegistration for reliable cancellation handling
-        var registration = cancellationToken.Register(() => {
-            if (tcs.Task.IsCompleted) return; // Already completed
-
-            System.Diagnostics.Debug.WriteLine($"Cancellation requested for Typst process (PID: {process.Id}). Attempting termination.");
-            try
-            {
-                if (!process.HasExited) process.Kill(true); // Kill process tree if possible
-            }
-            catch (Exception ex) when (ex is InvalidOperationException || ex is PlatformNotSupportedException)
-            {
-                 System.Diagnostics.Debug.WriteLine($"Warning: Failed to kill process {process.Id} after cancellation: {ex.Message}");
-            }
-            finally
-            {
-                tcs.TrySetCanceled(cancellationToken); // Ensure TCS transitions to cancelled state
-            }
-        });
-
-        // Ensure registration is disposed when the task completes (success, fail, or cancel)
-        tcs.Task.ContinueWith(_ => registration.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-
-        // Handle cases where process exits *before* Exited event handler is attached or completes very fast
-        if (process.HasExited)
-        {
-            tcs.TrySetResult(true);
-        }
-
-        return tcs.Task;
-    }
-
     private async Task WriteToStdinAsync(Process process, Stream inputStream, CancellationToken cancellationToken)
     {
         _logger.LogDebug("Starting copy from input stream to Typst stdin (PID: {PID}).", process.Id);
@@ -194,18 +150,17 @@ public class TypstCompiler : ITypstCompiler
         catch (OperationCanceledException)
         {
             _logger.LogWarning("Writing to Typst stdin (PID: {PID}) was canceled.", process.Id);
-            throw; // Re-throw cancellation
+            throw;
         }
         catch (IOException ioEx)
         {
-            // Log details, process might have crashed.
             _logger.LogError(ioEx, "IOException during stdin write (PID: {PID}). Process may have exited.", process.Id);
             if (process.HasExited)
-                 throw new TypstProcessException($"Typst process (PID: {process.Id}) exited with code {process.ExitCode} during stdin write.", ioEx);
-             else
-                 throw new TypstProcessException($"IOException during stdin write for PID {process.Id}.", ioEx);
+                throw new TypstProcessException($"Typst process (PID: {process.Id}) exited with code {process.ExitCode} during stdin write.", ioEx);
+            else
+                throw new TypstProcessException($"IOException during stdin write for PID {process.Id}.", ioEx);
         }
-        catch (Exception ex) // Catch any other unexpected errors during the write
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error writing to Typst stdin (PID: {PID}).", process.Id);
             throw new TypstProcessException($"Unexpected error during stdin write for PID {process.Id}.", ex);
