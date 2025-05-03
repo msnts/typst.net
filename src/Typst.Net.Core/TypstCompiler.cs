@@ -80,8 +80,14 @@ public class TypstCompiler : ITypstCompiler
         }
         finally
         {
-            process?.Dispose();
-            _logger.LogDebug("Typst process (PID: {PID}) resources released after error.", process?.Id ?? -1);
+            if (process != null) 
+            {
+                if (process.ExitCode != 0)
+                {
+                    _logger.LogDebug("Typst process (PID: {PID}) resources released after error.", process.Id);
+                }
+                process.Dispose();
+            }
         }
     }
 

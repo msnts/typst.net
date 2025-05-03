@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Typst.Net.Examples.Api", "e
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Typst.Net.Core.Tests", "tests\Typst.Net.Core.Tests\Typst.Net.Core.Tests.csproj", "{821D6576-AE57-4326-90C4-F8097F6D058E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Typst.Net.Benchmarks", "tests\Typst.Net.Benchmarks\Typst.Net.Benchmarks.csproj", "{88D2B4DE-3369-43B4-965B-D3DAEF477A73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{821D6576-AE57-4326-90C4-F8097F6D058E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{821D6576-AE57-4326-90C4-F8097F6D058E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{821D6576-AE57-4326-90C4-F8097F6D058E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88D2B4DE-3369-43B4-965B-D3DAEF477A73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88D2B4DE-3369-43B4-965B-D3DAEF477A73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88D2B4DE-3369-43B4-965B-D3DAEF477A73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88D2B4DE-3369-43B4-965B-D3DAEF477A73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -41,5 +47,6 @@ Global
 		{01D70AD3-A50D-4005-99C5-342B64571F48} = {9B3E4F5F-69CA-4804-A895-1EB696318F8B}
 		{A8DABE3E-0398-4BC3-95BE-BB93648515F2} = {0A6FC856-6E5D-40A0-A148-24FB1C80A825}
 		{821D6576-AE57-4326-90C4-F8097F6D058E} = {F6921331-0EC2-444F-A4B5-BB798141D82A}
+		{88D2B4DE-3369-43B4-965B-D3DAEF477A73} = {F6921331-0EC2-444F-A4B5-BB798141D82A}
 	EndGlobalSection
 EndGlobal
