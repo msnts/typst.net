@@ -4,13 +4,21 @@ using Typst.Net.Core.Configuration;
 
 namespace Typst.Net.Core;
 
+/// <summary>
+/// Provides extension methods for IServiceCollection to register Typst services.
+/// </summary>
 public static class TypstServiceCollectionExtensions
 {
-    public static IServiceCollection AddTypst(this IServiceCollection services)
+    /// <summary>
+    /// Adds Typst services to the specified IServiceCollection.
+    /// </summary>
+    /// <param name="services">The IServiceCollection to add services to.</param>
+    /// <returns>The IServiceCollection so that additional calls can be chained.</returns>
+    public static IServiceCollection AddTypstCompiler(this IServiceCollection services)
     {
-        services.AddSingleton<IValidateOptions<TypstOptions>, TypstOptionsValidation>();
-        services.AddScoped<ITypstCompiler, TypstCompiler>();
-
+        services.AddOptions<TypstOptions>();
+        services.AddSingleton<IProcessWrapper, ProcessWrapper>();
+        services.AddSingleton<ITypstCompiler, TypstCompiler>();
         return services;
     }
 }

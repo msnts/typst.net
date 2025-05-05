@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddLogging();
 
-builder.Services.AddTypst();
+builder.Services.AddTypstCompiler();
 
 builder.Services.AddOptions<TypstOptions>()
     .Bind(builder.Configuration.GetSection(TypstOptions.SectionName))
