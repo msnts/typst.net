@@ -1,24 +1,23 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Typst.Net.Core.Configuration;
+using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core;
 
 /// <summary>
-/// Provides extension methods for IServiceCollection to register Typst services.
+/// Extension methods for configuring Typst services.
 /// </summary>
 public static class TypstServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds Typst services to the specified IServiceCollection.
+    /// Adds Typst services to the service collection.
     /// </summary>
-    /// <param name="services">The IServiceCollection to add services to.</param>
-    /// <returns>The IServiceCollection so that additional calls can be chained.</returns>
-    public static IServiceCollection AddTypstCompiler(this IServiceCollection services)
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddTypst(this IServiceCollection services)
     {
-        services.AddOptions<TypstOptions>();
-        services.AddSingleton<IProcessWrapper, ProcessWrapper>();
-        services.AddSingleton<ITypstCompiler, TypstCompiler>();
+        services.AddSingleton<ITypstProcessFactory, TypstProcessFactory>();
+        services.AddScoped<ITypstCompiler, TypstCompiler>();
         return services;
     }
 }

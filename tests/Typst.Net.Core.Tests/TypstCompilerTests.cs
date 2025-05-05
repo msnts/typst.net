@@ -6,12 +6,13 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Typst.Net.Core.Configuration;
 using Typst.Net.Core.Exceptions;
+using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core.Tests;
 
 public sealed class TypstCompilerTests : IDisposable
 {
-    private readonly Mock<IProcessWrapper> _processWrapperMock;
+    private readonly Mock<ITypstProcessFactory> _processFactoryMock;
     private readonly Mock<ILogger<TypstCompiler>> _loggerMock;
     private readonly Mock<IOptions<TypstOptions>> _optionsMock;
     private readonly TypstCompiler _compiler;
@@ -19,7 +20,7 @@ public sealed class TypstCompilerTests : IDisposable
 
     public TypstCompilerTests()
     {
-        _processWrapperMock = new Mock<IProcessWrapper>();
+        _processFactoryMock = new Mock<ITypstProcessFactory>();
         _loggerMock = new Mock<ILogger<TypstCompiler>>();
         _optionsMock = new Mock<IOptions<TypstOptions>>();
 
@@ -29,7 +30,7 @@ public sealed class TypstCompilerTests : IDisposable
         _compiler = new TypstCompiler(
             _optionsMock.Object,
             _loggerMock.Object,
-            _processWrapperMock.Object);
+            _processFactoryMock.Object);
     }
 
     public void Dispose()
@@ -45,10 +46,10 @@ public sealed class TypstCompilerTests : IDisposable
     {
         // Arrange
         var logger = Mock.Of<ILogger<TypstCompiler>>();
-        var processWrapper = Mock.Of<IProcessWrapper>();
+        var processFactory = Mock.Of<ITypstProcessFactory>();
 
         // Act & Assert
-        var act = () => new TypstCompiler(null!, logger, processWrapper);
+        var act = () => new TypstCompiler(null!, logger, processFactory);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("options");
     }
@@ -57,16 +58,16 @@ public sealed class TypstCompilerTests : IDisposable
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
         // Arrange
-        var processWrapper = Mock.Of<IProcessWrapper>();
+        var processFactory = Mock.Of<ITypstProcessFactory>();
 
         // Act & Assert
-        var act = () => new TypstCompiler(_optionsMock.Object, null!, processWrapper);
+        var act = () => new TypstCompiler(_optionsMock.Object, null!, processFactory);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("logger");
     }
 
     [Fact]
-    public void Constructor_WithNullProcessWrapper_ThrowsArgumentNullException()
+    public void Constructor_WithNullProcessFactory_ThrowsArgumentNullException()
     {
         // Arrange
         var logger = Mock.Of<ILogger<TypstCompiler>>();
@@ -74,7 +75,7 @@ public sealed class TypstCompilerTests : IDisposable
         // Act & Assert
         var act = () => new TypstCompiler(_optionsMock.Object, logger, null!);
         act.Should().Throw<ArgumentNullException>()
-            .WithParameterName("processWrapper");
+            .WithParameterName("processFactory");
     }
 
     [Fact]
@@ -136,7 +137,7 @@ public sealed class TypstCompilerTests : IDisposable
         var processInputStream = new MemoryStream();
         _disposables.Add(processInputStream);
 
-        var processMock = new Mock<IProcess>();
+        var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(true);
         processMock.Setup(x => x.HasExited).Returns(true);
         processMock.Setup(x => x.ExitCode).Returns(0);
@@ -145,7 +146,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardError).Returns(errorStream);
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processWrapperMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
             .Returns(processMock.Object);
 
         // Act
@@ -155,7 +156,7 @@ public sealed class TypstCompilerTests : IDisposable
         result.Should().NotBeNull();
         result.OutputData.Should().NotBeNull();
 
-        _processWrapperMock.Verify(x => x.CreateProcess(It.Is<ProcessStartInfo>(p => 
+        _processFactoryMock.Verify(x => x.CreateProcess(It.Is<ProcessStartInfo>(p => 
             p.FileName == "typst" && 
             p.Arguments.Contains("--format pdf"))), Times.Once);
 
@@ -178,7 +179,7 @@ public sealed class TypstCompilerTests : IDisposable
         var processInputStream = new MemoryStream();
         _disposables.Add(processInputStream);
 
-        var processMock = new Mock<IProcess>();
+        var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(true);
         processMock.Setup(x => x.HasExited).Returns(true);
         processMock.Setup(x => x.ExitCode).Returns(1);
@@ -186,7 +187,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardError).Returns(errorStream);
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processWrapperMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -206,10 +207,10 @@ public sealed class TypstCompilerTests : IDisposable
 
         var compileOptions = new TypstCompileOptions { Format = OutputFormat.Pdf };
 
-        var processMock = new Mock<IProcess>();
+        var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(false);
 
-        _processWrapperMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -230,13 +231,13 @@ public sealed class TypstCompilerTests : IDisposable
         var compileOptions = new TypstCompileOptions { Format = OutputFormat.Pdf };
         var cancellationToken = new CancellationToken(true);
 
-        var processMock = new Mock<IProcess>();
+        var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(true);
         processMock.Setup(x => x.WaitForExitAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processWrapperMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -256,12 +257,12 @@ public sealed class TypstCompilerTests : IDisposable
 
         var compileOptions = new TypstCompileOptions { Format = OutputFormat.Pdf };
 
-        var processMock = new Mock<IProcess>();
+        var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(true);
         processMock.Setup(x => x.StandardInput).Throws(new IOException("Write failed"));
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processWrapperMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -286,7 +287,7 @@ public sealed class TypstCompilerTests : IDisposable
         var processInputStream = new MemoryStream();
         _disposables.Add(processInputStream);
 
-        var processMock = new Mock<IProcess>();
+        var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(true);
         processMock.Setup(x => x.HasExited).Returns(true);
         processMock.Setup(x => x.ExitCode).Returns(0);
@@ -295,7 +296,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardError).Returns(errorStream);
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processWrapperMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
             .Returns(processMock.Object);
 
         // Act & Assert

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using Typst.Net.Core.Configuration;
 using Typst.Net.Core.Exceptions;
+using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core;
 
@@ -13,13 +14,13 @@ public class TypstCompiler : ITypstCompiler
     private readonly ILogger<TypstCompiler> _logger;
     private const int DefaultStreamBufferSize = 81920; // Default for CopyToAsync, avoids small buffers
 
-    private readonly IProcessWrapper _processWrapper;
+    private readonly ITypstProcessFactory _processFactory;
 
-    public TypstCompiler(IOptions<TypstOptions> options, ILogger<TypstCompiler> logger, IProcessWrapper processWrapper)
+    public TypstCompiler(IOptions<TypstOptions> options, ILogger<TypstCompiler> logger, ITypstProcessFactory processFactory)
     {
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _processWrapper = processWrapper ?? throw new ArgumentNullException(nameof(processWrapper));
+        _processFactory = processFactory ?? throw new ArgumentNullException(nameof(processFactory));
     }
 
     public async Task<TypstResult> CompileAsync(Stream inputStream, TypstCompileOptions compileOptions, CancellationToken cancellationToken = default)
@@ -30,7 +31,7 @@ public class TypstCompiler : ITypstCompiler
 
         TypstCompilerLogs.LogStartingCompilation(_logger, compileOptions.Format.ToString());
 
-        IProcess? process = null;
+        ITypstProcess? process = null;
 
         try
         {
@@ -50,7 +51,7 @@ public class TypstCompiler : ITypstCompiler
             TypstCompilerLogs.LogStdinTaskComplete(_logger, process.Id);
 
             int exitCode = process.ExitCode;
-            string stdErr = process.GetErrorData();
+            string stdErr = await new StreamReader(process.StandardError).ReadToEndAsync(cancellationToken);
 
             if (exitCode == 0)
             {
@@ -80,7 +81,7 @@ public class TypstCompiler : ITypstCompiler
         }
     }
 
-    private IProcess StartTypstProcess(TypstCompileOptions compileOptions)
+    private ITypstProcess StartTypstProcess(TypstCompileOptions compileOptions)
     {
         string arguments = BuildArgumentsForStdinStdout(compileOptions);
         TypstCompilerLogs.LogCreatingProcess(_logger, _options.ExecutablePath, arguments);
@@ -99,7 +100,7 @@ public class TypstCompiler : ITypstCompiler
             StandardErrorEncoding = Encoding.UTF8
         };
 
-        var process = _processWrapper.CreateProcess(processStartInfo);
+        var process = _processFactory.CreateProcess(processStartInfo);
 
         TypstCompilerLogs.LogStartingProcess(_logger);
         try
@@ -121,7 +122,7 @@ public class TypstCompiler : ITypstCompiler
         return process;
     }
 
-    private async Task WriteToStdinAsync(IProcess process, Stream inputStream, CancellationToken cancellationToken)
+    private async Task WriteToStdinAsync(ITypstProcess process, Stream inputStream, CancellationToken cancellationToken)
     {
         TypstCompilerLogs.LogStartingStdinCopy(_logger, process.Id);
         try
@@ -153,7 +154,7 @@ public class TypstCompiler : ITypstCompiler
         }
     }
 
-    private async Task<MemoryStream> ReadStdoutToMemoryAsync(IProcess process, CancellationToken cancellationToken)
+    private async Task<MemoryStream> ReadStdoutToMemoryAsync(ITypstProcess process, CancellationToken cancellationToken)
     {
         TypstCompilerLogs.LogReadingStdout(_logger, process.Id);
         var memoryStream = new MemoryStream();
@@ -188,7 +189,7 @@ public class TypstCompiler : ITypstCompiler
         return new TypstCompilationException(errorMsg, stdErr);
     }
 
-    private void CleanupProcess(IProcess? process, string reason)
+    private void CleanupProcess(ITypstProcess? process, string reason)
     {
         if (process == null || process.HasExited)
         {

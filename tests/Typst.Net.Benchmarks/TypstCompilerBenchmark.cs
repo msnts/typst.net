@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using System.Text;
 using Typst.Net.Core;
 using Typst.Net.Core.Configuration;
+using Typst.Net.Core.Process;
 
 namespace Typst.Net.Benchmarks;
 
@@ -27,8 +28,8 @@ public class TypstCompilerBenchmark
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 
         var logger = loggerFactory.CreateLogger<TypstCompiler>();
-        var processWrapper = new ProcessWrapper();
-        _compiler = new TypstCompiler(options, logger, processWrapper);
+        var processFactory = new TypstProcessFactory();
+        _compiler = new TypstCompiler(options, logger, processFactory);
 
         // Criar um stream de entrada simulado
         const string sampleInput = "Sample Typst document content";
