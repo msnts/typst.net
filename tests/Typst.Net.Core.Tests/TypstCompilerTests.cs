@@ -14,7 +14,6 @@ public sealed class TypstCompilerTests : IDisposable
 {
     private readonly Mock<ITypstProcessFactory> _processFactoryMock;
     private readonly Mock<ILogger<TypstCompiler>> _loggerMock;
-    private readonly Mock<IOptions<TypstOptions>> _optionsMock;
     private readonly TypstCompiler _compiler;
     private readonly List<IDisposable> _disposables = new();
 
@@ -22,13 +21,8 @@ public sealed class TypstCompilerTests : IDisposable
     {
         _processFactoryMock = new Mock<ITypstProcessFactory>();
         _loggerMock = new Mock<ILogger<TypstCompiler>>();
-        _optionsMock = new Mock<IOptions<TypstOptions>>();
-
-        _optionsMock.Setup(x => x.Value)
-            .Returns(new TypstOptions { ExecutablePath = "typst" });
 
         _compiler = new TypstCompiler(
-            _optionsMock.Object,
             _loggerMock.Object,
             _processFactoryMock.Object);
     }
@@ -42,26 +36,13 @@ public sealed class TypstCompilerTests : IDisposable
     }
 
     [Fact]
-    public void Constructor_WithNullOptions_ThrowsArgumentNullException()
-    {
-        // Arrange
-        var logger = Mock.Of<ILogger<TypstCompiler>>();
-        var processFactory = Mock.Of<ITypstProcessFactory>();
-
-        // Act & Assert
-        var act = () => new TypstCompiler(null!, logger, processFactory);
-        act.Should().Throw<ArgumentNullException>()
-            .WithParameterName("options");
-    }
-
-    [Fact]
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
         // Arrange
         var processFactory = Mock.Of<ITypstProcessFactory>();
 
         // Act & Assert
-        var act = () => new TypstCompiler(_optionsMock.Object, null!, processFactory);
+        var act = () => new TypstCompiler(null!, processFactory);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("logger");
     }
@@ -73,7 +54,7 @@ public sealed class TypstCompilerTests : IDisposable
         var logger = Mock.Of<ILogger<TypstCompiler>>();
 
         // Act & Assert
-        var act = () => new TypstCompiler(_optionsMock.Object, logger, null!);
+        var act = () => new TypstCompiler(logger, null!);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("processFactory");
     }
@@ -146,7 +127,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardError).Returns(errorStream);
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
         // Act
@@ -156,9 +137,8 @@ public sealed class TypstCompilerTests : IDisposable
         result.Should().NotBeNull();
         result.OutputData.Should().NotBeNull();
 
-        _processFactoryMock.Verify(x => x.CreateProcess(It.Is<ProcessStartInfo>(p => 
-            p.FileName == "typst" && 
-            p.Arguments.Contains("--format pdf"))), Times.Once);
+        _processFactoryMock.Verify(x => x.CreateProcess(It.Is<TypstCompileOptions>(o => 
+            o.Format == OutputFormat.Pdf)), Times.Once);
 
         processMock.Verify(x => x.Start(), Times.Once);
         processMock.Verify(x => x.WaitForExitAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -187,7 +167,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardError).Returns(errorStream);
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -210,7 +190,7 @@ public sealed class TypstCompilerTests : IDisposable
         var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(false);
 
-        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -237,7 +217,7 @@ public sealed class TypstCompilerTests : IDisposable
             .ThrowsAsync(new OperationCanceledException());
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -262,7 +242,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardInput).Throws(new IOException("Write failed"));
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
         // Act & Assert
@@ -296,7 +276,7 @@ public sealed class TypstCompilerTests : IDisposable
         processMock.Setup(x => x.StandardError).Returns(errorStream);
         processMock.Setup(x => x.Id).Returns(12345);
 
-        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<ProcessStartInfo>()))
+        _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
         // Act & Assert

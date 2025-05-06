@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace Typst.Net.Core.Process;
 
 /// <summary>
@@ -8,9 +6,9 @@ namespace Typst.Net.Core.Process;
 public interface ITypstProcessFactory
 {
     /// <summary>
-    /// Creates a new Typst process instance with the specified start information.
+    /// Creates a new instance of a Typst process.
     /// </summary>
-    /// <param name="startInfo">The process start information.</param>
-    /// <returns>A new Typst process instance.</returns>
-    ITypstProcess CreateProcess(ProcessStartInfo startInfo);
+    /// <param name="compileOptions">The compilation options.</param>
+    /// <returns>A new instance of <see cref="ITypstProcess"/>.</returns>
+    ITypstProcess CreateProcess(TypstCompileOptions options);
 }

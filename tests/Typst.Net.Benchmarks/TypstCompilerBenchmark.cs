@@ -28,8 +28,8 @@ public class TypstCompilerBenchmark
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 
         var logger = loggerFactory.CreateLogger<TypstCompiler>();
-        var processFactory = new TypstProcessFactory();
-        _compiler = new TypstCompiler(options, logger, processFactory);
+        var processFactory = new TypstProcessFactory(options, loggerFactory.CreateLogger<TypstProcessFactory>());
+        _compiler = new TypstCompiler(logger, processFactory);
 
         // Criar um stream de entrada simulado
         const string sampleInput = "Sample Typst document content";

@@ -1,8 +1,5 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
+﻿using Microsoft.Extensions.Logging;
 using System.Text;
-using Typst.Net.Core.Configuration;
 using Typst.Net.Core.Exceptions;
 using Typst.Net.Core.Process;
 
@@ -10,15 +7,13 @@ namespace Typst.Net.Core;
 
 public class TypstCompiler : ITypstCompiler
 {
-    private readonly TypstOptions _options;
     private readonly ILogger<TypstCompiler> _logger;
     private const int DefaultStreamBufferSize = 81920; // Default for CopyToAsync, avoids small buffers
 
     private readonly ITypstProcessFactory _processFactory;
 
-    public TypstCompiler(IOptions<TypstOptions> options, ILogger<TypstCompiler> logger, ITypstProcessFactory processFactory)
+    public TypstCompiler(ILogger<TypstCompiler> logger, ITypstProcessFactory processFactory)
     {
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _processFactory = processFactory ?? throw new ArgumentNullException(nameof(processFactory));
     }
@@ -83,24 +78,7 @@ public class TypstCompiler : ITypstCompiler
 
     private ITypstProcess StartTypstProcess(TypstCompileOptions compileOptions)
     {
-        string arguments = BuildArgumentsForStdinStdout(compileOptions);
-        TypstCompilerLogs.LogCreatingProcess(_logger, _options.ExecutablePath, arguments);
-
-        var processStartInfo = new ProcessStartInfo
-        {
-            FileName = _options.ExecutablePath,
-            Arguments = arguments,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = compileOptions.RootDirectory ?? Environment.CurrentDirectory,
-            StandardOutputEncoding = null,
-            StandardErrorEncoding = Encoding.UTF8
-        };
-
-        var process = _processFactory.CreateProcess(processStartInfo);
+        var process = _processFactory.CreateProcess(compileOptions);
 
         TypstCompilerLogs.LogStartingProcess(_logger);
         try
@@ -206,38 +184,5 @@ public class TypstCompiler : ITypstCompiler
         {
             TypstCompilerLogs.LogFailedToKillProcess(_logger, killEx, process.Id);
         }
-    }
-
-    private string BuildArgumentsForStdinStdout(TypstCompileOptions options)
-    {
-        var argsBuilder = new StringBuilder();
-        argsBuilder.Append("compile"); // Base command
-
-        // Format is required
-        argsBuilder.Append($" --format {options.Format.ToString().ToLowerInvariant()}");
-
-        // Optional arguments
-        if (options.FontPaths != null) {
-            foreach(var path in options.FontPaths.Where(p => !string.IsNullOrWhiteSpace(p)))
-                argsBuilder.Append($" --font-path \"{path.Trim()}\"");
-        }
-        if (options.Inputs != null) {
-            foreach(var kvp in options.Inputs)
-                argsBuilder.Append($" --input \"{kvp.Key.Trim()}\"=\"{kvp.Value}\""); // Basic escaping
-        }
-        if (!string.IsNullOrWhiteSpace(options.RootDirectory)) {
-             argsBuilder.Append($" --root \"{options.RootDirectory.Trim()}\"");
-        }
-
-        // Specify stdin and stdout
-        argsBuilder.Append(" -");   // Input from stdin
-        argsBuilder.Append(" -"); // Output to stdout
-
-        // Append default arguments if configured
-        if (!string.IsNullOrWhiteSpace(_options.DefaultArguments)) {
-            argsBuilder.Append($" {_options.DefaultArguments}");
-        }
-
-        return argsBuilder.ToString();
     }
 }

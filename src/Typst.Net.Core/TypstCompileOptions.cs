@@ -1,3 +1,5 @@
+namespace Typst.Net.Core;
+
 /// <summary>
 /// Specifies the output format for the compilation process.
 /// </summary>
