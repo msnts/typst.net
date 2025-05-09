@@ -2,7 +2,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/Typst.Net.Core.svg)](https://www.nuget.org/packages/Typst.Net.Core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://github.com/yourusername/Typst.Net/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/Typst.Net/actions/workflows/ci.yml)
+[![Build Status](https://github.com/yourusername/Typst.Net/actions/workflows/ci.yml/badge.svg)]
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=bugs)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
