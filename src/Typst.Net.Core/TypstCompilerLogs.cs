@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 
+namespace Typst.Net.Core;
+
 public static partial class TypstCompilerLogs
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "Starting Typst compilation. Format={Format}")]

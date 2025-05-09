@@ -44,8 +44,7 @@ public class TypstCompileOptions
     public IEnumerable<string>? FontPaths { get; set; }
 
     /// <summary>
-    /// Gets or sets a read-only dictionary of input files and their content.
-    /// The keys represent file names, and the values represent their content.
+    /// Gets or sets the data to be included in the compilation process.
     /// </summary>
-    public IReadOnlyDictionary<string, string>? Inputs { get; set; }
+    public string Data { get; set; } = string.Empty;
 }

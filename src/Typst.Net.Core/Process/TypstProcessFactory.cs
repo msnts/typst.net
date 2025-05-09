@@ -18,9 +18,10 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
     public ITypstProcess CreateProcess(TypstCompileOptions compileOptions)
     {
         ArgumentNullException.ThrowIfNull(compileOptions);
-        string arguments = BuildArgumentsForStdinStdout(compileOptions);
+        string arguments = BuildArguments(compileOptions);
 
         TypstCompilerLogs.LogCreatingProcess(_logger, _options.ExecutablePath, arguments);
+        
         var processStartInfo = new ProcessStartInfo
         {
             FileName = _options.ExecutablePath,
@@ -38,35 +39,29 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
         return new TypstProcess(processStartInfo);
     }
 
-    private string BuildArgumentsForStdinStdout(TypstCompileOptions options)
+    private static string BuildArguments(TypstCompileOptions options)
     {
-        var argsBuilder = new StringBuilder();
-        argsBuilder.Append("compile"); // Base command
-
-        // Format is required
-        argsBuilder.Append($" --format {options.Format.ToString().ToLowerInvariant()}");
+        var argsBuilder = new StringBuilder($"compile --format {options.Format.ToString().ToLowerInvariant()}");
 
         // Optional arguments
-        if (options.FontPaths != null) {
-            foreach(var path in options.FontPaths.Where(p => !string.IsNullOrWhiteSpace(p)))
-                argsBuilder.Append($" --font-path \"{path.Trim()}\"");
+        if (options.FontPaths != null)
+        {
+            argsBuilder.AppendJoin(" ", options.FontPaths
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(path => $"--font-path \"{path.Trim()}\""));
         }
-        if (options.Inputs != null) {
-            foreach(var kvp in options.Inputs)
-                argsBuilder.Append($" --input \"{kvp.Key.Trim()}\"=\"{kvp.Value}\""); // Basic escaping
+
+        if (string.IsNullOrWhiteSpace(options.Data))
+        {
+            argsBuilder.Append($" --input data={options.Data.Trim()}");
         }
+
         if (!string.IsNullOrWhiteSpace(options.RootDirectory)) {
              argsBuilder.Append($" --root \"{options.RootDirectory.Trim()}\"");
         }
 
         // Specify stdin and stdout
-        argsBuilder.Append(" -");   // Input from stdin
-        argsBuilder.Append(" -"); // Output to stdout
-
-        // Append default arguments if configured
-        if (!string.IsNullOrWhiteSpace(_options.DefaultArguments)) {
-            argsBuilder.Append($" {_options.DefaultArguments}");
-        }
+        argsBuilder.Append(" - -");
 
         return argsBuilder.ToString();
     }
