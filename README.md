@@ -1,5 +1,14 @@
 # Typst.Net
 
+[![NuGet](https://img.shields.io/nuget/v/Typst.Net.Core.svg)](https://www.nuget.org/packages/Typst.Net.Core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://github.com/yourusername/Typst.Net/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/Typst.Net/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=bugs)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=coverage)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=msnts_typst.net&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=msnts_typst.net)
+
 Typst.Net is a .NET library that provides a wrapper around the Typst compiler, allowing you to compile Typst documents to various output formats (PDF, SVG, PNG) directly from your .NET applications.
 
 ## Features
@@ -10,6 +19,7 @@ Typst.Net is a .NET library that provides a wrapper around the Typst compiler, a
 - Support for multiple input files
 - Asynchronous compilation with cancellation support
 - Dependency injection support through Microsoft.Extensions.DependencyInjection
+- Cross-platform support (Windows, Linux, macOS)
 
 ## Installation
 
@@ -60,19 +70,67 @@ var serviceProvider = services.BuildServiceProvider();
 var compiler = serviceProvider.GetRequiredService<ITypstCompiler>();
 ```
 
+### Advanced Usage with Multiple Inputs
+
+```csharp
+var options = new TypstCompileOptions
+{
+    Format = OutputFormat.Pdf,
+    RootDirectory = "/path/to/your/project",
+    FontPaths = new[] { "/path/to/fonts" },
+    Inputs = new Dictionary<string, Stream>
+    {
+        ["main.typ"] = File.OpenRead("main.typ"),
+        ["template.typ"] = File.OpenRead("template.typ")
+    }
+};
+
+var compiler = new TypstCompiler();
+var result = await compiler.CompileAsync(options);
+```
+
 ## Configuration Options
 
 The `TypstCompileOptions` class provides several configuration options:
 
-- `Format`: The desired output format (PDF, SVG, or PNG)
-- `RootDirectory`: The root directory for resolving relative paths
-- `FontPaths`: Collection of font file paths to be used during compilation
-- `Inputs`: Dictionary of input files and their content
+| Option | Type | Description |
+|--------|------|-------------|
+| `Format` | `OutputFormat` | The desired output format (PDF, SVG, or PNG) |
+| `RootDirectory` | `string` | The root directory for resolving relative paths |
+| `FontPaths` | `string[]` | Collection of font file paths to be used during compilation |
+| `Inputs` | `Dictionary<string, Stream>` | Dictionary of input files and their content |
 
 ## Requirements
 
 - .NET 6.0 or later
 - Typst compiler installed on the system
+
+### Installing Typst
+
+#### Windows
+```powershell
+winget install typst
+```
+
+#### macOS
+```bash
+brew install typst
+```
+
+#### Linux
+```bash
+cargo install typst-cli
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
