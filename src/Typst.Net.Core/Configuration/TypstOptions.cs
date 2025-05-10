@@ -11,7 +11,13 @@ public class TypstOptions
     public const string SectionName = "Typst";
 
     /// <summary>
-    /// Gets or sets the file path to the Typst executable.
+    /// The name of the environment variable for the Typst executable path.
     /// </summary>
-    public string ExecutablePath { get; set; } = string.Empty;
+    public const string ExecutablePathEnvVar = "TYPST_EXECUTABLE_PATH";
+
+    /// <summary>
+    /// Gets or sets the file path to the Typst executable.
+    /// If not set, it will try to get the value from the environment variable TYPST_EXECUTABLE_PATH.
+    /// </summary>
+    public string ExecutablePath { get; set; } = Environment.GetEnvironmentVariable(ExecutablePathEnvVar) ?? string.Empty;
 }

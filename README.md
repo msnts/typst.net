@@ -46,6 +46,7 @@ dotnet add package Typst.Net
 
 - .NET 8.0 or later
 - Typst compiler installed on the system
+- Environment variable `TYPST_EXECUTABLE_PATH` set to the path of the Typst executable (optional, can be configured in code)
 
 ### Installing Typst
 
@@ -78,7 +79,9 @@ using Typst.Net.Core.Process;
 // Configure Typst options
 var typstOptions = new TypstOptions
 {
-    ExecutablePath = "/path/to/typst" // e.g., "typst" if it's in PATH
+    // The ExecutablePath will be read from TYPST_EXECUTABLE_PATH environment variable
+    // You can also set it explicitly here if needed
+    // ExecutablePath = "/path/to/typst"
 };
 
 // Create logger (using console logger for example)
@@ -123,7 +126,9 @@ var services = new ServiceCollection();
 // Configure Typst options
 services.Configure<TypstOptions>(options =>
 {
-    options.ExecutablePath = "/path/to/typst";
+    // The ExecutablePath will be read from TYPST_EXECUTABLE_PATH environment variable
+    // You can also set it explicitly here if needed
+    // options.ExecutablePath = "/path/to/typst";
 });
 
 // Add Typst services
@@ -183,7 +188,7 @@ catch (TypstConfigurationException ex)
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `ExecutablePath` | `string` | The path to the Typst executable |
+| `ExecutablePath` | `string` | The path to the Typst executable. If not set, it will try to get the value from the `TYPST_EXECUTABLE_PATH` environment variable |
 
 ## 🛠️ Example Projects
 
