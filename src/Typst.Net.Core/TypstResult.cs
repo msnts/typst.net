@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Typst.Net.Core;
 
 /// <summary>
@@ -9,4 +11,5 @@ namespace Typst.Net.Core;
 /// <param name="StandardError">
 /// A <see cref="string"/> containing any error messages or diagnostic information produced during the Typst operation.
 /// </param>
+[ExcludeFromCodeCoverage]
 public sealed record TypstResult(MemoryStream OutputData, string StandardError);

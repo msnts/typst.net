@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Typst.Net.Core;
 
 /// <summary>
@@ -24,6 +26,7 @@ public enum OutputFormat
 /// <summary>
 /// Represents the options used during the Typst compilation process.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class TypstCompileOptions
 {
     /// <summary>

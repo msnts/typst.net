@@ -1,5 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
-using Typst.Net.Core.Configuration;
 using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core;
@@ -7,6 +7,7 @@ namespace Typst.Net.Core;
 /// <summary>
 /// Extension methods for configuring Typst services.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public static class TypstServiceCollectionExtensions
 {
     /// <summary>
