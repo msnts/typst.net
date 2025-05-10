@@ -48,11 +48,6 @@ jobs:
       uses: SonarSource/sonarqube-scan-action@v5.2.0
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        sonar.projectKey: msnts_typst.net
-        sonar.projectName: msnts
-        sonar.sources: src/
-        sonar.tests: tests/
-        sonar.cs.opencover.reportPaths: '**/TestResults/*/coverage.cobertura.xml'
 
     - name: Calculate version
       id: nuget_version
