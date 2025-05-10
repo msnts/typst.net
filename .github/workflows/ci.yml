@@ -42,7 +42,7 @@ jobs:
       run: dotnet build --no-restore --configuration Release
 
     - name: Run tests
-      run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage"
+      run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage;Format=cobertura,lcov,opencover"
 
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v5.2.0
