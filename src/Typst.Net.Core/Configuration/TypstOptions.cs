@@ -14,10 +14,4 @@ public class TypstOptions
     /// Gets or sets the file path to the Typst executable.
     /// </summary>
     public string ExecutablePath { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the default arguments to be used with the Typst executable.
-    /// This value is optional and can be null.
-    /// </summary>
-    public string? DefaultArguments { get; set; }
 }

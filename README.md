@@ -20,7 +20,7 @@
 
 ## 📖 About
 
-Typst.Net is a .NET library that provides a wrapper around the Typst compiler, allowing you to compile Typst documents to various output formats (PDF, SVG, PNG) directly from your .NET applications.
+Typst.Net is a .NET library that provides a wrapper around the Typst compiler, allowing you to compile Typst documents to various output formats (PDF, SVG, PNG) directly from your .NET applications. It offers a robust, asynchronous API with comprehensive error handling and logging capabilities.
 
 ## ✨ Features
 
@@ -28,8 +28,11 @@ Typst.Net is a .NET library that provides a wrapper around the Typst compiler, a
 - Support for custom font paths
 - Configurable root directory for resolving relative paths
 - Asynchronous compilation with cancellation support
+- Comprehensive error handling and logging
 - Dependency injection integration through Microsoft.Extensions.DependencyInjection
 - Cross-platform support (Windows, Linux, macOS)
+- Process management and resource cleanup
+- Configurable Typst executable path
 
 ## 🚀 Installation
 
@@ -41,7 +44,7 @@ dotnet add package Typst.Net
 
 ## 🔧 Prerequisites
 
-- .NET 6.0 or later
+- .NET 8.0 or later
 - Typst compiler installed on the system
 
 ### Installing Typst
@@ -66,7 +69,27 @@ cargo install typst-cli
 ### Basic Usage
 
 ```csharp
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Typst.Net.Core;
+using Typst.Net.Core.Configuration;
+using Typst.Net.Core.Process;
+
+// Configure Typst options
+var typstOptions = new TypstOptions
+{
+    ExecutablePath = "/path/to/typst" // e.g., "typst" if it's in PATH
+};
+
+// Create logger (using console logger for example)
+using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var logger = loggerFactory.CreateLogger<TypstCompiler>();
+
+// Create process factory
+var processFactory = new TypstProcessFactory(
+    Options.Create(typstOptions),
+    loggerFactory.CreateLogger<TypstProcessFactory>()
+);
 
 // Create compiler options
 var options = new TypstCompileOptions
@@ -77,14 +100,15 @@ var options = new TypstCompileOptions
 };
 
 // Create the compiler
-var compiler = new TypstCompiler();
+var compiler = new TypstCompiler(logger, processFactory);
 
 // Compile a document
 using var inputStream = File.OpenRead("document.typ");
 var result = await compiler.CompileAsync(inputStream, options);
 
 // Access the compiled output
-var pdfBytes = result.Output;
+var pdfBytes = result.OutputData;
+var stdErr = result.StandardError;
 ```
 
 ### Using Dependency Injection
@@ -95,6 +119,14 @@ using Typst.Net.Core;
 
 // Configure services
 var services = new ServiceCollection();
+
+// Configure Typst options
+services.Configure<TypstOptions>(options =>
+{
+    options.ExecutablePath = "/path/to/typst";
+});
+
+// Add Typst services
 services.AddTypst();
 
 // Get the compiler
@@ -102,35 +134,56 @@ var serviceProvider = services.BuildServiceProvider();
 var compiler = serviceProvider.GetRequiredService<ITypstCompiler>();
 ```
 
-### Advanced Usage with Multiple Inputs
+### Error Handling
+
+The library provides several exception types for different error scenarios:
+
+- `TypstCompilationException`: Thrown when the Typst compilation fails
+- `TypstProcessException`: Thrown when there are issues with the Typst process
+- `TypstConfigurationException`: Thrown when there are configuration issues
+
+Example error handling:
 
 ```csharp
-var options = new TypstCompileOptions
+try
 {
-    Format = OutputFormat.Pdf,
-    RootDirectory = "/path/to/your/project",
-    FontPaths = new[] { "/path/to/fonts" },
-    Inputs = new Dictionary<string, Stream>
-    {
-        ["main.typ"] = File.OpenRead("main.typ"),
-        ["template.typ"] = File.OpenRead("template.typ")
-    }
-};
-
-var compiler = new TypstCompiler();
-var result = await compiler.CompileAsync(options);
+    var result = await compiler.CompileAsync(inputStream, options);
+    // Process successful result
+}
+catch (TypstCompilationException ex)
+{
+    // Handle compilation errors
+    Console.WriteLine($"Compilation failed: {ex.Message}");
+    Console.WriteLine($"Standard error: {ex.StandardError}");
+}
+catch (TypstProcessException ex)
+{
+    // Handle process-related errors
+    Console.WriteLine($"Process error: {ex.Message}");
+}
+catch (TypstConfigurationException ex)
+{
+    // Handle configuration errors
+    Console.WriteLine($"Configuration error: {ex.Message}");
+}
 ```
 
 ## ⚙️ Configuration Options
 
-The `TypstCompileOptions` class provides several configuration options:
+### TypstCompileOptions
 
 | Option | Type | Description |
 |--------|------|-------------|
 | `Format` | `OutputFormat` | The desired output format (PDF, SVG, or PNG) |
 | `RootDirectory` | `string` | The root directory for resolving relative paths |
-| `FontPaths` | `string[]` | Collection of font file paths to be used during compilation |
-| `Inputs` | `Dictionary<string, Stream>` | Dictionary of input files and their content |
+| `FontPaths` | `IEnumerable<string>` | Collection of font file paths to be used during compilation |
+| `Data` | `string` | Additional data to be included in the compilation process |
+
+### TypstOptions
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `ExecutablePath` | `string` | The path to the Typst executable |
 
 ## 🛠️ Example Projects
 
