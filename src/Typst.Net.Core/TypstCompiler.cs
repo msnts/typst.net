@@ -52,10 +52,10 @@ public class TypstCompiler : ITypstCompiler
             {
                 TypstCompilerLogs.LogProcessCompletedSuccessfully(_logger, process.Id);
                 var outputMemoryStream = await ReadStdoutToMemoryAsync(process, cancellationToken);
-  
+
                 return new TypstResult(outputMemoryStream, stdErr);
             }
-            
+
             throw CreateCompilationException(exitCode, stdErr, process.Id);
         }
         catch (OperationCanceledException)
@@ -169,13 +169,13 @@ public class TypstCompiler : ITypstCompiler
 
     private void CleanupProcess(ITypstProcess? process, string reason)
     {
-        if (process == null || process.HasExited)
+        if (process?.HasExited != false)
         {
             return;
         }
 
         TypstCompilerLogs.LogKillingProcess(_logger, process.Id, reason);
-        
+
         try
         {
             process.Kill();
