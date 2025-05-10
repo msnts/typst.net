@@ -3,12 +3,18 @@ name: CI/CD
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*-alpha.*'
+      - 'v*-beta.*'
+      - 'v*-rc.*'
+      - 'v*-preview.*'
+      - 'v*[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
     branches: [ main ]
 
 env:
   DOTNET_VERSION: '8.0.x'
-  NUGET_PACKAGE_NAME: 'Typst.Net.Core'
+  NUGET_PACKAGE_NAME: 'Typst.Net'
 
 jobs:
   build:
@@ -42,23 +48,19 @@ jobs:
       uses: SonarSource/sonarqube-scan-action@v5.2.0
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        sonar.sources: src/
+        sonar.tests: tests/
+        sonar.cs.opencover.reportPaths: '**/TestResults/*/coverage.cobertura.xml'
 
     - name: Calculate version
-      id: version
+      id: nuget_version
       run: |
-        if [[ $GITHUB_REF == refs/tags/* ]]; then
-          VERSION=${GITHUB_REF#refs/tags/}
-        elif [[ $GITHUB_REF == refs/heads/main ]]; then
-          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-          VERSION=$(echo $VERSION | sed 's/^v//')
-          VERSION=$(echo $VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
-        else
-          VERSION="0.0.0-preview"
-        fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        TAG_NAME="${GITHUB_REF#refs/tags/}"
+        echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_OUTPUT"
+        echo "NUGET_VERSION=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
     - name: Pack
-      run: dotnet pack --no-build --configuration Release -p:PackageVersion=${{ steps.version.outputs.version }}
+      run: dotnet pack --configuration Release -o . /p:PackageVersion="${{ steps.nuget_version.outputs.NUGET_VERSION }}"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
@@ -69,7 +71,7 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
     - uses: actions/checkout@v4
@@ -85,13 +87,13 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Publish to NuGet
-      run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push "*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ env.NUGET_API_KEY }} --skip-duplicate
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
+      if: startsWith(github.ref, 'refs/tags/v')
       with:
         files: |
           **/*.nupkg
