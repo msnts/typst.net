@@ -54,7 +54,7 @@ jobs:
           -Dsonar.sources=src/
           -Dsonar.tests=tests/
           -Dsonar.cs.opencover.reportPaths=**/TestResults/*/coverage.opencover.xml
-          -Dsonar.verbose=true
+          -Dsonar.verbose=false
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -66,7 +66,7 @@ jobs:
         echo "NUGET_VERSION=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
     - name: Pack
-      run: dotnet pack ~/src/Typst.Net.Core/Typst.Net.Core.csproj --no-build --configuration Release -p:PackageVersion="${{ steps.nuget_version.outputs.NUGET_VERSION }}"
+      run: dotnet pack ./src/Typst.Net.Core/Typst.Net.Core.csproj --no-build --configuration Release -p:PackageVersion="${{ steps.nuget_version.outputs.NUGET_VERSION }}"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
