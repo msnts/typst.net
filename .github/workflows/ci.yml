@@ -87,9 +87,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: nuget-package
-
-    - name: Unzip 
-      run: tar -xvf nuget-package.zip
+        path: ./artifacts
+ 
+    - name: Display structure of downloaded files
+      run: ls -R
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -97,7 +98,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Publish to NuGet
-      run: dotnet nuget push "*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ env.NUGET_API_KEY }} --skip-duplicate
+      run: dotnet nuget push "./artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ env.NUGET_API_KEY }} --skip-duplicate
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
