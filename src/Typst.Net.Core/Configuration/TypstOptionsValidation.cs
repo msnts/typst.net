@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Options;
 
 namespace Typst.Net.Core.Configuration;
 
+[ExcludeFromCodeCoverage]
 public class TypstOptionsValidation : IValidateOptions<TypstOptions>
 {
     public ValidateOptionsResult Validate(string? name, TypstOptions options)
@@ -9,7 +11,7 @@ public class TypstOptionsValidation : IValidateOptions<TypstOptions>
         if (string.IsNullOrWhiteSpace(options.ExecutablePath))
         {
             return ValidateOptionsResult.Fail(
-                $"Typst executable path is not configured. " +
+                "Typst executable path is not configured. " +
                 $"Please set the '{TypstOptions.ExecutablePathEnvVar}' environment variable " +
                 $"or configure '{TypstOptions.SectionName}.ExecutablePath' in your configuration.");
         }
@@ -18,7 +20,7 @@ public class TypstOptionsValidation : IValidateOptions<TypstOptions>
         {
             return ValidateOptionsResult.Fail(
                 $"Typst executable not found at configured path: {options.ExecutablePath}. " +
-                $"Please ensure the path is correct and the executable exists.");
+                "Please ensure the path is correct and the executable exists.");
         }
 
         return ValidateOptionsResult.Success;

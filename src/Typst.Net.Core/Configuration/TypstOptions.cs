@@ -1,8 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Typst.Net.Core.Configuration;
 
 /// <summary>
 /// Represents the configuration options for Typst.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class TypstOptions
 {
     /// <summary>
