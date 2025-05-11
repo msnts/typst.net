@@ -13,6 +13,11 @@ public interface ITypstProcess : IDisposable
     int Id { get; }
 
     /// <summary>
+    /// Gets the process start information.
+    /// </summary>
+    public ProcessStartInfo StartInfo { get; }
+
+    /// <summary>
     /// Gets whether the process has exited.
     /// </summary>
     bool HasExited { get; }
@@ -53,4 +58,4 @@ public interface ITypstProcess : IDisposable
     /// Kills the process.
     /// </summary>
     void Kill();
-} 
+}

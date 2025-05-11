@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Typst.Net.Core.Process;
 
 /// <summary>
 /// Represents a Typst process instance.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class TypstProcess : ITypstProcess
 {
     private readonly System.Diagnostics.Process _process;
@@ -17,6 +19,9 @@ public class TypstProcess : ITypstProcess
     {
         _process = new System.Diagnostics.Process { StartInfo = startInfo };
     }
+
+    /// <inheritdoc />
+    public ProcessStartInfo StartInfo => _process.StartInfo;
 
     /// <inheritdoc />
     public bool HasExited => _process.HasExited;
@@ -40,7 +45,7 @@ public class TypstProcess : ITypstProcess
     public bool Start() => _process.Start();
 
     /// <inheritdoc />
-    public Task WaitForExitAsync(CancellationToken cancellationToken = default) => 
+    public Task WaitForExitAsync(CancellationToken cancellationToken = default) =>
         _process.WaitForExitAsync(cancellationToken);
 
     /// <inheritdoc />
@@ -48,4 +53,4 @@ public class TypstProcess : ITypstProcess
 
     /// <inheritdoc />
     public void Dispose() => _process.Dispose();
-} 
+}

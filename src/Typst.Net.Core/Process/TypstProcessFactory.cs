@@ -21,7 +21,7 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
         string arguments = BuildArguments(compileOptions);
 
         TypstCompilerLogs.LogCreatingProcess(_logger, _options.ExecutablePath, arguments);
-        
+
         var processStartInfo = new ProcessStartInfo
         {
             FileName = _options.ExecutablePath,
@@ -51,13 +51,14 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
                 .Select(path => $"--font-path \"{path.Trim()}\""));
         }
 
-        if (string.IsNullOrWhiteSpace(options.Data))
+        if (!string.IsNullOrWhiteSpace(options.Data))
         {
             argsBuilder.Append($" --input data={options.Data.Trim()}");
         }
 
-        if (!string.IsNullOrWhiteSpace(options.RootDirectory)) {
-             argsBuilder.Append($" --root \"{options.RootDirectory.Trim()}\"");
+        if (!string.IsNullOrWhiteSpace(options.RootDirectory))
+        {
+            argsBuilder.Append($" --root \"{options.RootDirectory.Trim()}\"");
         }
 
         // Specify stdin and stdout
@@ -65,4 +66,4 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
 
         return argsBuilder.ToString();
     }
-} 
+}
