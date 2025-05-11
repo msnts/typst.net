@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageId>Typst.Net</PackageId>
+    <Authors>Marcos Santos</Authors>
   </PropertyGroup>
 
   <ItemGroup>
