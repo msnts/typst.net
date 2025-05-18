@@ -43,6 +43,11 @@ public interface ITypstProcess : IDisposable
     Stream StandardError { get; }
 
     /// <summary>
+    /// Gets the standard output as a string.
+    /// </summary>
+    Task<string> GetStandardErrorAsStringAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Starts the process.
     /// </summary>
     /// <returns>True if the process was started successfully.</returns>

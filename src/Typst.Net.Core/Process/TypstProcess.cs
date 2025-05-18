@@ -42,6 +42,13 @@ public class TypstProcess : ITypstProcess
     public Stream StandardError => _process.StandardError.BaseStream;
 
     /// <inheritdoc />
+    public async Task<string> GetStandardErrorAsStringAsync(CancellationToken cancellationToken = default)
+    {
+        using var reader = new StreamReader(StandardError);
+        return await reader.ReadToEndAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public bool Start() => _process.Start();
 
     /// <inheritdoc />

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Typst.Net.Core.Configuration;
 
 namespace Typst.Net.Core.Process;
@@ -53,7 +54,7 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
 
         if (!string.IsNullOrWhiteSpace(options.Data))
         {
-            argsBuilder.Append($" --input data={options.Data.Trim()}");
+            argsBuilder.Append($" --input data={AddQuotes(options.Data.Trim())}");
         }
 
         if (!string.IsNullOrWhiteSpace(options.RootDirectory))
@@ -66,4 +67,6 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
 
         return argsBuilder.ToString();
     }
+
+    private static string AddQuotes(string str) => str.StartsWith('"') && str.EndsWith('"') ? str : $"\"{str}\"";
 }
