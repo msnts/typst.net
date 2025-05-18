@@ -19,9 +19,9 @@ public class TypstCompiler : ITypstCompiler
 
     public async Task<TypstResult> CompileAsync(Stream inputStream, TypstCompileOptions compileOptions, CancellationToken cancellationToken = default)
     {
-        if (inputStream is null) return TypstResult.Failure("Input stream cannot be null.", string.Empty);
-        if (compileOptions is null) return TypstResult.Failure("Compile options cannot be null.", string.Empty);
-        if (!inputStream.CanRead) return TypstResult.Failure("Input stream must be readable.", string.Empty);
+        if (inputStream is null) return TypstResult.Failure(Error.ProcessError("Input stream cannot be null."), string.Empty);
+        if (compileOptions is null) return TypstResult.Failure(Error.ProcessError("Compile options cannot be null."), string.Empty);
+        if (!inputStream.CanRead) return TypstResult.Failure(Error.ProcessError("Input stream must be readable."), string.Empty);
 
         TypstCompilerLogs.LogStartingCompilation(_logger, compileOptions.Format.ToString());
 
@@ -46,7 +46,7 @@ public class TypstCompiler : ITypstCompiler
             {
                 _logger.LogError("Typst compilation failed (PID: {Id}) with exit code {exitCode}. Stderr:\n{Stderr}", process.Id, process.ExitCode, details);
 
-                return TypstResult.Failure($"Typst process exited with code {process.ExitCode}.", details);
+                return TypstResult.Failure(compilationResult.Error, details);
             }
 
             TypstCompilerLogs.LogProcessCompletedSuccessfully(_logger, process.Id);
@@ -63,7 +63,7 @@ public class TypstCompiler : ITypstCompiler
         catch (Exception ex)
         {
             TypstCompilerLogs.LogUnexpectedError(_logger, ex);
-            return TypstResult.Failure($"Unexpected error during Typst compilation: {ex.Message}", ex.ToString());
+            return TypstResult.Failure(Error.ProcessError($"Unexpected error during Typst compilation: {ex.Message}"), ex.ToString());
         }
     }
 
@@ -71,8 +71,7 @@ public class TypstCompiler : ITypstCompiler
     {
         try
         {
-            // Concurrently write to stdin and wait for process exit
-            Task<Result<Unit>> compilationTask = WriteToStdinAsync(process, inputStream, cancellationToken);
+            var compilationResult = await WriteToStdinAsync(process, inputStream, cancellationToken);
 
             TypstCompilerLogs.LogWaitingForProcessExit(_logger, process.Id);
 
@@ -80,8 +79,12 @@ public class TypstCompiler : ITypstCompiler
 
             TypstCompilerLogs.LogProcessExited(_logger, process.Id);
 
-            // Ensure the stdin writing task also completed
-            return await compilationTask;
+            if (compilationResult.IsError || (compilationResult.IsSuccess && process.ExitCode == 0))
+            {
+                return compilationResult;
+            }
+
+            return Result<Unit>.Failure(Error.CompilationError($"Typst process exited with code {process.ExitCode}."));
         }
         finally
         {
@@ -98,14 +101,14 @@ public class TypstCompiler : ITypstCompiler
         {
             if (!process.Start())
             {
-                return Result<ITypstProcess>.Failure("Failed to start Typst process (process.Start() returned false).");
+                return Result<ITypstProcess>.Failure(Error.ProcessError("Failed to start Typst process (process.Start() returned false)."));
             }
         }
         catch (Exception ex)
         {
             process.Dispose();
             TypstCompilerLogs.LogProcessStartFailed(_logger, ex);
-            return Result<ITypstProcess>.Failure($"Failed to start Typst process: {ex.Message}");
+            return Result<ITypstProcess>.Failure(Error.ProcessError($"Failed to start Typst process: {ex.Message}"));
         }
 
         TypstCompilerLogs.LogProcessStarted(_logger, process.Id);
@@ -118,7 +121,7 @@ public class TypstCompiler : ITypstCompiler
         TypstCompilerLogs.LogStartingStdinCopy(_logger, process.Id);
         try
         {
-            using (var stdinWriter = new StreamWriter(process.StandardInput, Encoding.UTF8, -1, leaveOpen: false))
+            await using (var stdinWriter = new StreamWriter(process.StandardInput, Encoding.UTF8, -1, leaveOpen: false))
             {
                 await inputStream.CopyToAsync(stdinWriter.BaseStream, DefaultStreamBufferSize, cancellationToken);
                 await stdinWriter.FlushAsync(cancellationToken);
@@ -136,14 +139,14 @@ public class TypstCompiler : ITypstCompiler
             TypstCompilerLogs.LogStdinIOException(_logger, ioEx, process.Id);
             if (process.HasExited)
             {
-                return Result<Unit>.Failure($"IOException during stdin write for PID {process.Id}: {ioEx.Message}");
+                return Result<Unit>.Failure(Error.ProcessError($"IOException during stdin write for PID {process.Id}: {ioEx.Message}"));
             }
-            return Result<Unit>.Failure($"Typst process (PID: {process.Id}) exited with code {process.ExitCode} during stdin write: {ioEx.Message}");
+            return Result<Unit>.Failure(Error.ProcessError($"Typst process (PID: {process.Id}) exited with code {process.ExitCode} during stdin write: {ioEx.Message}"));
         }
         catch (Exception ex)
         {
             TypstCompilerLogs.LogUnexpectedStdinError(_logger, ex, process.Id);
-            return Result<Unit>.Failure($"Unexpected error during stdin write for PID {process.Id}: {ex.Message}");
+            return Result<Unit>.Failure(Error.ProcessError($"Unexpected error during stdin write for PID {process.Id}: {ex.Message}"));
         }
     }
 
@@ -171,7 +174,7 @@ public class TypstCompiler : ITypstCompiler
         {
             TypstCompilerLogs.LogStdoutReadError(_logger, ex, process.Id);
             await memoryStream.DisposeAsync();
-            return Result<MemoryStream>.Failure($"Failed to read stdout stream for PID {process.Id}: {ex.Message}");
+            return Result<MemoryStream>.Failure(Error.ProcessError($"Failed to read stdout stream for PID {process.Id}: {ex.Message}"));
         }
     }
 

@@ -46,9 +46,11 @@ public static class CompilerEndpoints
 
             return Results.Problem(
                 type: "Compilation failed.",
-                title: result.Error,
+                title: result.Error.Description,
                 detail: result.Details,
-                statusCode: StatusCodes.Status500InternalServerError);
+                statusCode: result.Error.Code == ErrorCode.CompilationError
+                    ? StatusCodes.Status422UnprocessableEntity 
+                    : StatusCodes.Status500InternalServerError);
         }
         catch (OperationCanceledException)
         {
