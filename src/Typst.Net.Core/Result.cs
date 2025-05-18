@@ -1,6 +1,6 @@
 namespace Typst.Net.Core;
 
-public readonly struct Unit
+internal readonly struct Unit
 {
     public static readonly Unit Value = new();
 }
