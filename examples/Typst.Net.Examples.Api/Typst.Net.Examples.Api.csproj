@@ -9,11 +9,10 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Typst.Net.Core/Typst.Net.Core.csproj" />
   </ItemGroup>
-
+  
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="8.1.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="8.1.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="8.1.1" />
+    <None Include="./example.typ">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-
 </Project>
