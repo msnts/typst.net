@@ -54,6 +54,6 @@ public class TypstCompilerBenchmark
     public void Cleanup()
     {
         _inputStream.Dispose();
-        _result?.OutputData.Dispose();
+        _result?.Output?.Dispose();
     }
 }
