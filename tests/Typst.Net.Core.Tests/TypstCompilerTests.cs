@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Typst.Net.Core.Configuration;
-using Typst.Net.Core.Exceptions;
 using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core.Tests;
@@ -60,32 +59,38 @@ public sealed class TypstCompilerTests : IDisposable
     }
 
     [Fact]
-    public async Task CompileAsync_WithNullInputStream_ThrowsArgumentNullException()
+    public async Task CompileAsync_WithNullInputStream_ReturnsFailureResult()
     {
         // Arrange
         var compileOptions = new TypstCompileOptions();
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(null!, compileOptions);
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .WithParameterName("inputStream");
+        // Act
+        var result = await _compiler.CompileAsync(null!, compileOptions);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.ToString().Should().Contain("Input stream cannot be null");
     }
 
     [Fact]
-    public async Task CompileAsync_WithNullCompileOptions_ThrowsArgumentNullException()
+    public async Task CompileAsync_WithNullCompileOptions_ReturnsFailureResult()
     {
         // Arrange
         var inputStream = new MemoryStream();
         _disposables.Add(inputStream);
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(inputStream, null!);
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .WithParameterName("compileOptions");
+        // Act
+        var result = await _compiler.CompileAsync(inputStream, null!);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.Description.Should().Be("Compile options cannot be null.");
     }
 
     [Fact]
-    public async Task CompileAsync_WithNonReadableStream_ThrowsArgumentException()
+    public async Task CompileAsync_WithNonReadableStream_ReturnsFailureResult()
     {
         // Arrange
         var inputStream = new MemoryStream();
@@ -94,11 +99,13 @@ public sealed class TypstCompilerTests : IDisposable
 
         var compileOptions = new TypstCompileOptions();
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(inputStream, compileOptions);
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithParameterName("inputStream")
-            .WithMessage("Input stream must be readable.*");
+        // Act
+        var result = await _compiler.CompileAsync(inputStream, compileOptions);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.Description.Should().Be("Input stream must be readable.");
     }
 
     [Fact]
@@ -134,8 +141,9 @@ public sealed class TypstCompilerTests : IDisposable
         var result = await _compiler.CompileAsync(inputStream, compileOptions);
 
         // Assert
-        result.Should().NotBeNull();
-        result.OutputData.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Output.Should().NotBeNull();
+        result.Output!.Length.Should().BeGreaterThan(0);
 
         _processFactoryMock.Verify(x => x.CreateProcess(It.Is<TypstCompileOptions>(o => 
             o.Format == OutputFormat.Pdf)), Times.Once);
@@ -146,7 +154,7 @@ public sealed class TypstCompilerTests : IDisposable
     }
 
     [Fact]
-    public async Task CompileAsync_WhenProcessFails_ThrowsTypstCompilationException()
+    public async Task CompileAsync_WhenProcessFails_ReturnsFailureResult()
     {
         // Arrange
         var inputStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello, Typst!"));
@@ -170,16 +178,20 @@ public sealed class TypstCompilerTests : IDisposable
         _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(inputStream, compileOptions);
-        await act.Should().ThrowAsync<TypstCompilationException>()
-            .WithMessage("Typst compilation failed (PID:*");
+        // Act
+        var result = await _compiler.CompileAsync(inputStream, compileOptions);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.Code.Should().Be(ErrorCode.CompilationError);
+        result.Error.Description.Should().Contain("Typst process exited with code 1");
 
         processMock.Verify(x => x.Dispose(), Times.Once);
     }
 
     [Fact]
-    public async Task CompileAsync_WhenProcessStartFails_ThrowsTypstProcessException()
+    public async Task CompileAsync_WhenProcessStartFails_ReturnsFailureResult()
     {
         // Arrange
         var inputStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello, Typst!"));
@@ -193,12 +205,15 @@ public sealed class TypstCompilerTests : IDisposable
         _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(inputStream, compileOptions);
-        await act.Should().ThrowAsync<TypstProcessException>()
-            .WithMessage("*Failed to start Typst process*");
+        // Act
+        var result = await _compiler.CompileAsync(inputStream, compileOptions);
 
-        processMock.Verify(x => x.Dispose(), Times.Once);
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.Description.Should().Contain("Failed to start Typst process");
+
+        processMock.Verify(x => x.Dispose(), Times.Never);
     }
 
     [Fact]
@@ -229,7 +244,7 @@ public sealed class TypstCompilerTests : IDisposable
     }
 
     [Fact]
-    public async Task CompileAsync_WhenStdinWriteFails_ThrowsTypstProcessException()
+    public async Task CompileAsync_WhenStdinWriteFails_ReturnsFailureResult()
     {
         // Arrange
         var inputStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello, Typst!"));
@@ -245,16 +260,19 @@ public sealed class TypstCompilerTests : IDisposable
         _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(inputStream, compileOptions);
-        await act.Should().ThrowAsync<TypstProcessException>()
-            .WithMessage("IOException during stdin write for PID*");
+        // Act
+        var result = await _compiler.CompileAsync(inputStream, compileOptions);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.Description.Should().Contain("Typst process (PID:");
 
         processMock.Verify(x => x.Dispose(), Times.Once);
     }
 
     [Fact]
-    public async Task CompileAsync_WhenStdoutReadFails_ThrowsTypstProcessException()
+    public async Task CompileAsync_WhenStdoutReadFails_ReturnsFailureResult()
     {
         // Arrange
         var inputStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello, Typst!"));
@@ -279,10 +297,13 @@ public sealed class TypstCompilerTests : IDisposable
         _processFactoryMock.Setup(x => x.CreateProcess(It.IsAny<TypstCompileOptions>()))
             .Returns(processMock.Object);
 
-        // Act & Assert
-        var act = () => _compiler.CompileAsync(inputStream, compileOptions);
-        await act.Should().ThrowAsync<TypstProcessException>()
-            .WithMessage("Failed to read stdout stream from PID*");
+        // Act
+        var result = await _compiler.CompileAsync(inputStream, compileOptions);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error.ToString().Should().Contain("Failed to read stdout stream");
 
         processMock.Verify(x => x.Dispose(), Times.Once);
     }

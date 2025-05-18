@@ -157,7 +157,7 @@ public sealed class TypstProcessFactoryTests : IDisposable
 
         // Assert
         var processInfo = process.StartInfo;
-        processInfo.Arguments.Should().Contain($"--input data={data}");
+        processInfo.Arguments.Should().Contain($"--input data=\"{data}\"");
     }
 
     [Fact]
