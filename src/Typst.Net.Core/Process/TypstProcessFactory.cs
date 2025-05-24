@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using Typst.Net.Core.Configuration;
 
 namespace Typst.Net.Core.Process;

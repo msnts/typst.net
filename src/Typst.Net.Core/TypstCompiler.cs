@@ -4,6 +4,7 @@ using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core;
 
+/// <inheritdoc />
 public class TypstCompiler : ITypstCompiler
 {
     private readonly ILogger<TypstCompiler> _logger;
@@ -17,17 +18,20 @@ public class TypstCompiler : ITypstCompiler
         _processFactory = processFactory ?? throw new ArgumentNullException(nameof(processFactory));
     }
 
+    /// <inheritdoc />
     public async Task<TypstResult> CompileAsync(Stream inputStream, TypstCompileOptions compileOptions, CancellationToken cancellationToken = default)
     {
-        if (inputStream is null) return TypstResult.Failure(Error.ProcessError("Input stream cannot be null."), string.Empty);
-        if (compileOptions is null) return TypstResult.Failure(Error.ProcessError("Compile options cannot be null."), string.Empty);
-        if (!inputStream.CanRead) return TypstResult.Failure(Error.ProcessError("Input stream must be readable."), string.Empty);
+        if (inputStream is null) return TypstResult.ProcessError("Input stream cannot be null.");
+        if (compileOptions is null) return TypstResult.ProcessError("Compile options cannot be null.");
+        if (!inputStream.CanRead) return TypstResult.ProcessError("Input stream must be readable.");
 
         TypstCompilerLogs.LogStartingCompilation(_logger, compileOptions.Format.ToString());
 
         try
         {
             var result = StartTypstProcess(compileOptions);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (result.IsError)
             {
@@ -44,7 +48,7 @@ public class TypstCompiler : ITypstCompiler
 
             if (compilationResult.IsError)
             {
-                _logger.LogError("Typst compilation failed (PID: {Id}) with exit code {exitCode}. Stderr:\n{Stderr}", process.Id, process.ExitCode, details);
+                TypstCompilerLogs.LogCompilationFailed(_logger, process.Id, process.ExitCode, details);
 
                 return TypstResult.Failure(compilationResult.Error, details);
             }
@@ -53,7 +57,9 @@ public class TypstCompiler : ITypstCompiler
 
             var outputResult = await ReadStdoutToMemoryAsync(process, cancellationToken);
 
-            return outputResult.IsSuccess ? TypstResult.Success(outputResult.Value, details) : TypstResult.Failure(outputResult.Error, details);
+            return outputResult.IsSuccess
+                ? TypstResult.Success(outputResult.Value, details)
+                : TypstResult.Failure(outputResult.Error, details);
         }
         catch (OperationCanceledException)
         {
@@ -63,7 +69,7 @@ public class TypstCompiler : ITypstCompiler
         catch (Exception ex)
         {
             TypstCompilerLogs.LogUnexpectedError(_logger, ex);
-            return TypstResult.Failure(Error.ProcessError($"Unexpected error during Typst compilation: {ex.Message}"), ex.ToString());
+            return TypstResult.ProcessError($"Unexpected error during Typst compilation: {ex.Message}", ex.StackTrace ?? string.Empty);
         }
     }
 
@@ -88,7 +94,7 @@ public class TypstCompiler : ITypstCompiler
         }
         finally
         {
-            CleanupProcess(process, "Unexpected error during Typst compilation.");
+            CleanupProcess(process);
         }
     }
 
@@ -101,14 +107,14 @@ public class TypstCompiler : ITypstCompiler
         {
             if (!process.Start())
             {
-                return Result<ITypstProcess>.Failure(Error.ProcessError("Failed to start Typst process (process.Start() returned false)."));
+                return Result<ITypstProcess>.ProcessError("Failed to start Typst process (process.Start() returned false).");
             }
         }
         catch (Exception ex)
         {
             process.Dispose();
             TypstCompilerLogs.LogProcessStartFailed(_logger, ex);
-            return Result<ITypstProcess>.Failure(Error.ProcessError($"Failed to start Typst process: {ex.Message}"));
+            return Result<ITypstProcess>.ProcessError($"Failed to start Typst process: {ex.Message}");
         }
 
         TypstCompilerLogs.LogProcessStarted(_logger, process.Id);
@@ -139,14 +145,14 @@ public class TypstCompiler : ITypstCompiler
             TypstCompilerLogs.LogStdinIOException(_logger, ioEx, process.Id);
             if (process.HasExited)
             {
-                return Result<Unit>.Failure(Error.ProcessError($"IOException during stdin write for PID {process.Id}: {ioEx.Message}"));
+                return Result<Unit>.ProcessError($"IOException during stdin write for PID {process.Id}: {ioEx.Message}");
             }
-            return Result<Unit>.Failure(Error.ProcessError($"Typst process (PID: {process.Id}) exited with code {process.ExitCode} during stdin write: {ioEx.Message}"));
+            return Result<Unit>.ProcessError($"Typst process (PID: {process.Id}) exited with code {process.ExitCode} during stdin write: {ioEx.Message}");
         }
         catch (Exception ex)
         {
             TypstCompilerLogs.LogUnexpectedStdinError(_logger, ex, process.Id);
-            return Result<Unit>.Failure(Error.ProcessError($"Unexpected error during stdin write for PID {process.Id}: {ex.Message}"));
+            return Result<Unit>.ProcessError($"Unexpected error during stdin write for PID {process.Id}: {ex.Message}");
         }
     }
 
@@ -156,10 +162,8 @@ public class TypstCompiler : ITypstCompiler
         var memoryStream = new MemoryStream();
         try
         {
-            using (var stdoutStream = process.StandardOutput)
-            {
-                await stdoutStream.CopyToAsync(memoryStream, DefaultStreamBufferSize, cancellationToken);
-            }
+            await process.StandardOutput.CopyToAsync(memoryStream, DefaultStreamBufferSize, cancellationToken);
+
             memoryStream.Position = 0;
             TypstCompilerLogs.LogStdoutReadComplete(_logger, memoryStream.Length, process.Id);
             return Result<MemoryStream>.Success(memoryStream);
@@ -174,18 +178,18 @@ public class TypstCompiler : ITypstCompiler
         {
             TypstCompilerLogs.LogStdoutReadError(_logger, ex, process.Id);
             await memoryStream.DisposeAsync();
-            return Result<MemoryStream>.Failure(Error.ProcessError($"Failed to read stdout stream for PID {process.Id}: {ex.Message}"));
+            return Result<MemoryStream>.ProcessError($"Failed to read stdout stream for PID {process.Id}: {ex.Message}");
         }
     }
 
-    private void CleanupProcess(ITypstProcess? process, string reason)
+    private void CleanupProcess(ITypstProcess? process)
     {
-        if (process?.HasExited != false)
+        if (process is not { HasExited: false })
         {
             return;
         }
 
-        TypstCompilerLogs.LogKillingProcess(_logger, process.Id, reason);
+        TypstCompilerLogs.LogKillingProcess(_logger, process.Id, "Unexpected error during Typst compilation.");
 
         try
         {

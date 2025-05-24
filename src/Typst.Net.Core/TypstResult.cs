@@ -66,4 +66,6 @@ public sealed class TypstResult
 
     internal static TypstResult Success(MemoryStream output, string details) => new(output, details);
     internal static TypstResult Failure(Error error, string details) => new(error, details);
+    internal static TypstResult ProcessError(string error, string details) => new(Error.ProcessError(error), details);
+    internal static TypstResult ProcessError(string error) => new(Error.ProcessError(error), string.Empty);
 }

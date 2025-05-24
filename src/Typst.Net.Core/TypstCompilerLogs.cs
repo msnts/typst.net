@@ -72,4 +72,7 @@ public static partial class TypstCompilerLogs
 
     [LoggerMessage(EventId = 23, Level = LogLevel.Error, Message = "Failed to start Typst process.")]
     public static partial void LogProcessStartFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 24, Level = LogLevel.Error, Message = "Typst compilation failed (PID: {Id}) with exit code {exitCode}. Stderr:\n{Details}")]
+    public static partial void LogCompilationFailed(ILogger logger, int id, int exitCode, string details);
 }

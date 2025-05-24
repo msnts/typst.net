@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Typst.Net.Core;
 using Typst.Net.Examples.Api.Extensions;
@@ -14,7 +15,7 @@ public static class CompilerEndpoints
         app.MapPost("/compile/{outputFormatString}", HandleTypstCompilation);
     }
 
-    private static async Task<IResult> HandleTypstCompilation(string outputFormatString, [FromBody] string data, ITypstCompiler compiler, ILogger<Program> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> HandleTypstCompilation(string outputFormatString, [FromBody] JsonDocument data, ITypstCompiler compiler, ILogger<Program> logger, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<OutputFormat>(outputFormatString, ignoreCase: true, out var outputFormat))
         {
@@ -26,7 +27,7 @@ public static class CompilerEndpoints
         var compileOptions = new TypstCompileOptions
         {
             Format = outputFormat,
-            Data = data // Pass the JSON data to the compiler
+            Data = data.RootElement.GetRawText() // Pass the JSON data to the compiler
         };
 
         using StreamReader inputStream = new("example.typ");
