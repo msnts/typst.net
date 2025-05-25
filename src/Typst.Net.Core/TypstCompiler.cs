@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Text;
+using Typst.Net.Core.Configuration;
 using Typst.Net.Core.Process;
 
 namespace Typst.Net.Core;
@@ -7,13 +9,13 @@ namespace Typst.Net.Core;
 /// <inheritdoc />
 public class TypstCompiler : ITypstCompiler
 {
+    private readonly TypstOptions _options;
     private readonly ILogger<TypstCompiler> _logger;
-    private const int DefaultStreamBufferSize = 81920; // Default for CopyToAsync, avoids small buffers
-
     private readonly ITypstProcessFactory _processFactory;
 
-    public TypstCompiler(ILogger<TypstCompiler> logger, ITypstProcessFactory processFactory)
+    public TypstCompiler(IOptions<TypstOptions> typstOptions, ITypstProcessFactory processFactory, ILogger<TypstCompiler> logger)
     {
+        _options = typstOptions.Value ?? throw new ArgumentNullException(nameof(typstOptions));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _processFactory = processFactory ?? throw new ArgumentNullException(nameof(processFactory));
     }
@@ -26,12 +28,14 @@ public class TypstCompiler : ITypstCompiler
         if (!inputStream.CanRead) return TypstResult.ProcessError("Input stream must be readable.");
 
         TypstCompilerLogs.LogStartingCompilation(_logger, compileOptions.Format.ToString());
+        using var timeoutCts = CreateCancellationTokenSource(compileOptions, cancellationToken);
+        var token = timeoutCts.Token;
 
         try
         {
             var result = StartTypstProcess(compileOptions);
 
-            cancellationToken.ThrowIfCancellationRequested();
+            token.ThrowIfCancellationRequested();
 
             if (result.IsError)
             {
@@ -40,11 +44,13 @@ public class TypstCompiler : ITypstCompiler
 
             using var process = result.Value;
 
-            var compilationResult = await DoCompileAsync(process, inputStream, cancellationToken);
+            var stderrTask = process.GetStandardErrorAsStringAsync(token);
+
+            var compilationResult = await DoCompileAsync(process, inputStream, token);
 
             TypstCompilerLogs.LogStdinTaskComplete(_logger, process.Id);
 
-            string details = await process.GetStandardErrorAsStringAsync(cancellationToken);
+            string details = await stderrTask;
 
             if (compilationResult.IsError)
             {
@@ -55,7 +61,7 @@ public class TypstCompiler : ITypstCompiler
 
             TypstCompilerLogs.LogProcessCompletedSuccessfully(_logger, process.Id);
 
-            var outputResult = await ReadStdoutToMemoryAsync(process, cancellationToken);
+            var outputResult = await ReadStdoutToMemoryAsync(process, token);
 
             return outputResult.IsSuccess
                 ? TypstResult.Success(outputResult.Value, details)
@@ -69,8 +75,16 @@ public class TypstCompiler : ITypstCompiler
         catch (Exception ex)
         {
             TypstCompilerLogs.LogUnexpectedError(_logger, ex);
-            return TypstResult.ProcessError($"Unexpected error during Typst compilation: {ex.Message}", ex.StackTrace ?? string.Empty);
+            return TypstResult.ProcessError($"Unexpected error during Typst compilation: {ex.Message}");
         }
+    }
+
+    private CancellationTokenSource CreateCancellationTokenSource(TypstCompileOptions compileOptions, CancellationToken cancellationToken)
+    {
+        var timeout = TimeSpan.FromMilliseconds(compileOptions.Timeout > 0 ? compileOptions.Timeout : _options.DefaultTimeout);
+        var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(timeout);
+        return timeoutCts;
     }
 
     private async Task<Result<Unit>> DoCompileAsync(ITypstProcess process, Stream inputStream, CancellationToken cancellationToken)
@@ -127,9 +141,10 @@ public class TypstCompiler : ITypstCompiler
         TypstCompilerLogs.LogStartingStdinCopy(_logger, process.Id);
         try
         {
+            //await inputStream.CopyToAsync(process.StandardInput, DefaultStreamBufferSize, cancellationToken);
             await using (var stdinWriter = new StreamWriter(process.StandardInput, Encoding.UTF8, -1, leaveOpen: false))
             {
-                await inputStream.CopyToAsync(stdinWriter.BaseStream, DefaultStreamBufferSize, cancellationToken);
+                await inputStream.CopyToAsync(stdinWriter.BaseStream, GetOptimalBufferSize(inputStream, _options.StdinBufferSize), cancellationToken);
                 await stdinWriter.FlushAsync(cancellationToken);
             }
             TypstCompilerLogs.LogFinishedStdinCopy(_logger, process.Id);
@@ -162,7 +177,7 @@ public class TypstCompiler : ITypstCompiler
         var memoryStream = new MemoryStream();
         try
         {
-            await process.StandardOutput.CopyToAsync(memoryStream, DefaultStreamBufferSize, cancellationToken);
+            await process.StandardOutput.CopyToAsync(memoryStream, GetOptimalBufferSize(process.StandardOutput, _options.StdoutBufferSize), cancellationToken);
 
             memoryStream.Position = 0;
             TypstCompilerLogs.LogStdoutReadComplete(_logger, memoryStream.Length, process.Id);
@@ -199,5 +214,21 @@ public class TypstCompiler : ITypstCompiler
         {
             TypstCompilerLogs.LogFailedToKillProcess(_logger, killEx, process.Id);
         }
+    }
+
+    private static int GetOptimalBufferSize(Stream stream, int defaultSize)
+    {
+        const int maxSensibleBufferSize = 4 * 1024 * 1024; // 4 MB
+
+        if (!stream.CanSeek)
+        {
+            return Math.Min(defaultSize, maxSensibleBufferSize);
+        }
+
+        return stream.Length switch
+        {
+            > 0 and < 1024 * 1024 => (int)Math.Min(defaultSize, Math.Min(stream.Length, maxSensibleBufferSize)),
+            _ => Math.Min(defaultSize, maxSensibleBufferSize)
+        };
     }
 }

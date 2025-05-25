@@ -50,4 +50,10 @@ public class TypstCompileOptions
     /// Gets or sets the data to be included in the compilation process.
     /// </summary>
     public string Data { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the timeout duration for the compilation process in milliseconds.
+    /// A value of -1 indicates no timeout.
+    /// </summary>
+    public int Timeout { get; set; } = -1;
 }

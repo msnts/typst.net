@@ -8,6 +8,8 @@ namespace Typst.Net.Core.Configuration;
 [ExcludeFromCodeCoverage]
 public class TypstOptions
 {
+    private const int DefaultStreamBufferSize = 81920;
+
     /// <summary>
     /// The name of the configuration section for Typst.
     /// </summary>
@@ -23,4 +25,22 @@ public class TypstOptions
     /// If not set, it will try to get the value from the environment variable TYPST_EXECUTABLE_PATH.
     /// </summary>
     public string ExecutablePath { get; set; } = Environment.GetEnvironmentVariable(ExecutablePathEnvVar) ?? string.Empty;
+
+    /// <summary>
+    /// Gets or sets the buffer size for streaming output from the Typst process.
+    /// The default value is 81920 bytes, which is suitable for CopyToAsync operations to avoid small buffers.
+    /// </summary>
+    public int StdinBufferSize { get; set; } = DefaultStreamBufferSize;
+
+    /// <summary>
+    /// Gets or sets the buffer size for reading standard output from the Typst process.
+    /// The default value is 81920 bytes, which is suitable for CopyToAsync operations to avoid small buffers.
+    /// </summary>
+    public int StdoutBufferSize { get; set; } = DefaultStreamBufferSize;
+
+    /// <summary>
+    /// Gets or sets the timeout for Typst process execution in milliseconds.
+    /// The default value is 30000 milliseconds (30 seconds).
+    /// </summary>
+    public int DefaultTimeout { get; set; } = 30000;
 }
