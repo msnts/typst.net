@@ -68,18 +68,18 @@ jobs:
 
     - name: Calculate version
       id: nuget_version
-      if: startsWith(github.ref, 'refs/tags/')
       run: |
-        TAG_NAME="${GITHUB_REF#refs/tags/}"
+        TAG_NAME="${GITHUB_REF#refs/tags/v}"
         echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_OUTPUT"
         echo "NUGET_VERSION=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
     - name: Pack
-      run: dotnet pack ./src/Typst.Net.Core/Typst.Net.Core.csproj --no-build --configuration Release -p:PackageVersion="${{ steps.nuget_version.outputs.NUGET_VERSION }}"
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: dotnet pack ./src/Typst.Net.Core/Typst.Net.csproj --no-build --configuration Release -p:PackageVersion="${{ steps.nuget_version.outputs.NUGET_VERSION }}"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
-      if: startsWith(github.ref, 'refs/tags/')
+      if: startsWith(github.ref, 'refs/tags/v')
       with:
         name: nuget-package
         path: '**/*.nupkg'
@@ -88,7 +88,7 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions: 
       contents: write
     steps:
@@ -109,7 +109,7 @@ jobs:
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
+      if: startsWith(github.ref, 'refs/tags/v')
       with:
         files: |
           **/*.nupkg
