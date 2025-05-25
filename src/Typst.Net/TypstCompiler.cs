@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text;
-using Typst.Net.Core.Configuration;
-using Typst.Net.Core.Process;
+using Typst.Net.Configuration;
+using Typst.Net.Process;
 
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 /// <inheritdoc />
 public class TypstCompiler : ITypstCompiler

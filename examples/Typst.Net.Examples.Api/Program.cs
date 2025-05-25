@@ -1,4 +1,4 @@
-using Typst.Net.Core;
+using Typst.Net;
 
 using Typst.Net.Examples.Api.Endpoints.CompilerEndpoints;
 

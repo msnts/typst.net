@@ -1,9 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
-using Typst.Net.Core.Configuration;
-using Typst.Net.Core.Process;
+using Typst.Net.Configuration;
+using Typst.Net.Process;
 
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 /// <summary>
 /// Extensions for adding Typst services to the service collection.

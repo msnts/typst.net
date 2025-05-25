@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Typst.Net.Core.Configuration;
+using Typst.Net.Configuration;
 
-namespace Typst.Net.Core.Process;
+namespace Typst.Net.Process;
 
 /// <summary>
 /// Factory for creating Typst process instances.
@@ -25,7 +25,7 @@ public class TypstProcessFactory(IOptions<TypstOptions> options, ILogger<TypstPr
         var processStartInfo = new ProcessStartInfo
         {
             FileName = _options.ExecutablePath,
-            Arguments = arguments,
+            Arguments = arguments, //TODO: fix security issues with arguments
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

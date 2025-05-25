@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Typst.Net.Core.Process;
+namespace Typst.Net.Process;
 
 /// <summary>
 /// Represents a Typst process instance.

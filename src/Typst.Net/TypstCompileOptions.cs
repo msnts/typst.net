@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 /// <summary>
 /// Specifies the output format for the compilation process.

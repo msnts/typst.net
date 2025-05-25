@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Typst.Net.Core.Configuration;
+namespace Typst.Net.Configuration;
 
 /// <summary>
 /// Represents the configuration options for Typst.

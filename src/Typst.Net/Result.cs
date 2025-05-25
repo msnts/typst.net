@@ -1,4 +1,4 @@
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 internal readonly struct Unit
 {

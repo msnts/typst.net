@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 /// <summary>
 /// Represents the result of a Typst operation, indicating either success with output or failure with an error.

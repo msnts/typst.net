@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Typst.Net.Core/Typst.Net.Core.csproj" />
+    <ProjectReference Include="../../src/Typst.Net/Typst.Net.csproj" />
   </ItemGroup>
 
   <ItemGroup>

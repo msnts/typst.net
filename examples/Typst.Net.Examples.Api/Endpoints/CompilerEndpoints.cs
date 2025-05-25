@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using Typst.Net.Core;
+using Typst.Net;
 using Typst.Net.Examples.Api.Extensions;
 
 namespace Typst.Net.Examples.Api.Endpoints.CompilerEndpoints;

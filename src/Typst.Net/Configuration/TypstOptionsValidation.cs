@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Options;
 
-namespace Typst.Net.Core.Configuration;
+namespace Typst.Net.Configuration;
 
 [ExcludeFromCodeCoverage]
 public class TypstOptionsValidation : IValidateOptions<TypstOptions>

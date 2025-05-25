@@ -1,4 +1,4 @@
-namespace Typst.Net.Core.Process;
+namespace Typst.Net.Process;
 
 /// <summary>
 /// Factory interface for creating Typst process instances.

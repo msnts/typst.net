@@ -4,10 +4,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Typst.Net.Core.Configuration;
-using Typst.Net.Core.Process;
+using Typst.Net.Configuration;
+using Typst.Net.Process;
 
-namespace Typst.Net.Core.Tests;
+namespace Typst.Net.Tests;
 
 public sealed class TypstCompilerTests : IDisposable
 {

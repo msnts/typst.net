@@ -1,4 +1,4 @@
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 /// <summary>
 /// Represents a compiler interface for processing Typst documents.

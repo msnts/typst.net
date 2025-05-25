@@ -1,6 +1,6 @@
 #import "@preview/modern-cv:0.8.0": *
 
-#show: resume.with1(
+#show: resume.with(
   author: (
     firstname: "John",
     lastname: "Smith",

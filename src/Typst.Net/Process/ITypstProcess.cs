@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Typst.Net.Core.Process;
+namespace Typst.Net.Process;
 
 /// <summary>
 /// Interface representing a Typst process.

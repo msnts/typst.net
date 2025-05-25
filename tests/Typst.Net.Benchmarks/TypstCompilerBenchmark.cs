@@ -2,9 +2,9 @@ using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text;
-using Typst.Net.Core;
-using Typst.Net.Core.Configuration;
-using Typst.Net.Core.Process;
+using Typst.Net;
+using Typst.Net.Configuration;
+using Typst.Net.Process;
 
 namespace Typst.Net.Benchmarks;
 

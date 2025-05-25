@@ -1,4 +1,4 @@
-using Typst.Net.Core;
+using Typst.Net;
 
 namespace Typst.Net.Examples.Api.Extensions;
 

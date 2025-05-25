@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Typst.Net.Core;
+namespace Typst.Net;
 
 public static partial class TypstCompilerLogs
 {
