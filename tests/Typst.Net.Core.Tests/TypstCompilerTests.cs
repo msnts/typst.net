@@ -11,6 +11,7 @@ namespace Typst.Net.Core.Tests;
 
 public sealed class TypstCompilerTests : IDisposable
 {
+    private readonly IOptions<TypstOptions> _options;
     private readonly Mock<ITypstProcessFactory> _processFactoryMock;
     private readonly Mock<ILogger<TypstCompiler>> _loggerMock;
     private readonly TypstCompiler _compiler;
@@ -18,12 +19,14 @@ public sealed class TypstCompilerTests : IDisposable
 
     public TypstCompilerTests()
     {
+        _options = Options.Create(new TypstOptions());
         _processFactoryMock = new Mock<ITypstProcessFactory>();
         _loggerMock = new Mock<ILogger<TypstCompiler>>();
 
         _compiler = new TypstCompiler(
-            _loggerMock.Object,
-            _processFactoryMock.Object);
+            _options,
+            _processFactoryMock.Object,
+            _loggerMock.Object);
     }
 
     public void Dispose()
@@ -41,7 +44,7 @@ public sealed class TypstCompilerTests : IDisposable
         var processFactory = Mock.Of<ITypstProcessFactory>();
 
         // Act & Assert
-        var act = () => new TypstCompiler(null!, processFactory);
+        var act = () => new TypstCompiler(_options, processFactory, null!);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("logger");
     }
@@ -53,7 +56,7 @@ public sealed class TypstCompilerTests : IDisposable
         var logger = Mock.Of<ILogger<TypstCompiler>>();
 
         // Act & Assert
-        var act = () => new TypstCompiler(logger, null!);
+        var act = () => new TypstCompiler(_options, null!, logger);
         act.Should().Throw<ArgumentNullException>()
             .WithParameterName("processFactory");
     }
@@ -223,8 +226,8 @@ public sealed class TypstCompilerTests : IDisposable
         var inputStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello, Typst!"));
         _disposables.Add(inputStream);
 
-        var compileOptions = new TypstCompileOptions { Format = OutputFormat.Pdf };
-        var cancellationToken = new CancellationToken(true);
+        var compileOptions = new TypstCompileOptions { Format = OutputFormat.Pdf, Timeout = 30000 };
+        var cancellationToken = new CancellationToken(false);
 
         var processMock = new Mock<ITypstProcess>();
         processMock.Setup(x => x.Start()).Returns(true);
